@@ -37,6 +37,8 @@ class Sale(BaseModel):
     car_vin: str
     sales_date: datetime
     cost: Decimal
+    # Установка значения флага на удаление по умолчанию False.
+    is_deleted: bool = False
 
     def index(self) -> str:
         return self.car_vin
@@ -57,3 +59,5 @@ class ModelSaleStats(BaseModel):
     car_model_name: str
     brand: str
     sales_number: int
+    total_price: Decimal  # Добавила для сортировки по цене в случае,
+    # если кол-во продаж одинаково для разных моделей.

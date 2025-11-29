@@ -1,0 +1,58 @@
+Доброго времени суток!
+
+Решила сдать проект даже при прохождении тестов 4/7.
+
+1) По поводу Задания Задание 3. Доступные к продаже - def get_cars. 
+Подразумеваю, что тест не прохожу, так как в них вижу, что машина
+с VIN KNAGM4A77D5316538 попадает в список, но на момент выполнения
+задания ещё не было отмены продажи и данный автомобиль в статусе проданного.
+Считаю правильным в списке 3 машины, а не 4.
+
+AssertionError: assert [Car(vin='5N1...lable'>), ...] == [Car(vin='KNA...lable'>), ...]
+E         
+E         At index 0 diff: Car(vin='5N1AR2MM4DC605884', model=4, price=Decimal('3200'), date_start=datetime.datetime(2024, 7, 15, 0, 0), status=<CarStatus.available: 'available'>) 
+!= Car(vin='KNAGM4A77D5316538', model=1, price=Decimal('2000'), date_start=datetime.datetime(2024, 2, 8, 0, 0), status=<CarStatus.available: 'available'>)
+
+2) Задание 5. Обновление ключевого поля -  def update_vin.
+Вижу в таблицах обновления и ключеных полей VIN и соответствующих индексов.
+Результат выдаётся с обновлённым VIN.
+В тесте эта злополучная машина почему-то опять как непроданная,
+а статус на available она будет менять только после 6-й задачи, после удаления продажи.
+
+        full_info_no_sale = CarFullInfo(
+            vin="KNAGM4A77D5316538",
+            car_model_name="Optima",
+            car_model_brand="Kia",
+            price=Decimal("2000"),
+            date_start=datetime(2024, 2, 8),
+            status=CarStatus.available,
+            sales_date=None,
+            sales_cost=None,
+        )
+
+3) Топ-3 , 7-я задача.
+Про машину злополучную опять вспомню, так как если в 6 задании отменили продажу и вернули статус,
+то в топ-3 эта машина не входит. То есть продаж не 7, а 6!
+В тестах же конечно же теперь вдруг она проданная:
+
+top_3_models = [
+>           ModelSaleStats(car_model_name="Optima", brand="Kia", sales_number=3),
+            ModelSaleStats(car_model_name="3", brand="Mazda", sales_number=2),
+            ModelSaleStats(car_model_name="Pathfinder", brand="Nissan", sales_number=1),
+        ]
+
+А на самом деле список другой:
+
+Список ТОП-3 самых продаваемых моделей: 
+[ModelSaleStats(car_model_name='3', brand='Mazda', sales_number=2, total_price=Decimal('5184.27')), 
+ModelSaleStats(car_model_name='Optima', brand='Kia', sales_number=2, total_price=Decimal('4476')), 
+ModelSaleStats(car_model_name='Pathfinder', brand='Nissan', sales_number=1, total_price=Decimal('3100'))]
+
+Здесь по заданию нужно при равных кол-вах продажи отсортировать тогда по стоимости, на первом месте те, что дороже.
+Так как правильный вариант Мазда 3 имеет 2 продажи, но дороже, чем 2 продажи Optima Kia, я добавила в класс 4-й атрибут суммарную стоимость.
+В задании же просят именно 3 параметра вывести.
+
+Проект сложный, непонятный, задания и пояснения к проекту не всегда корректны, ожидаемые результаты в тестах тоже.
+Жду с нетерпением комментариев!
+
+ 
