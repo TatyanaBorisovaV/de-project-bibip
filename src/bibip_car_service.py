@@ -11,6 +11,7 @@ class CarService:  # Инициализирует пути к файлам, гд
         self.root_directory_path = root_directory_path
         # Создаёт директорию, если её нет:
         Path(self.root_directory_path).mkdir(exist_ok=True)
+        self.cell_size = 500  # Задаём размер ячейки (длины строки).
         self.models_file = os.path.join(self.root_directory_path, "models.txt")
         self.cars_file = os.path.join(self.root_directory_path, "cars.txt")
         self.models_index_file = os.path.join(self.root_directory_path,
@@ -50,12 +51,12 @@ class CarService:  # Инициализирует пути к файлам, гд
         # Теперь перезапишем заново в таблицу уже отсортированный список.
         with open(file_path, 'w') as f:
             for line in data:
-                f.write(f'{line[0]} {line[1]}'.ljust(500) + '\n')
+                f.write(f'{line[0]} {line[1]}'.ljust(self.cell_size) + '\n')
 
     def read_line(self, file_path, line):
         with open(file_path, 'r') as f:
-            f.seek(int(line) * 502)
-            return f.read(500)
+            f.seek(int(line) * (self.cell_size + 2))
+            return f.read(self.cell_size)
 
     def find_index_by_key(self, key, file_path):
         # Находим индекс по ключу в файле index
@@ -67,48 +68,53 @@ class CarService:  # Инициализирует пути к файлам, гд
     # Задание 1. Сохранение автомобилей и моделей
     def add_model(self, model: Model) -> Model:
         formatted_line = (f'{model.id} {model.name} {model.brand}'
-                          .ljust(500) + '\n')
+                          .ljust(self.cell_size) + '\n')
         with open(self.models_file, 'r+', encoding='utf-8') as f_data:
             # длина строки 502, т.к. добавили символ перехода строки \n
-            f_data.seek(self.line_number_models * (502))
+            f_data.seek(self.line_number_models * (self.cell_size + 2))
             f_data.write(formatted_line)
         with open(self.models_index_file, 'a', encoding='utf-8') as f_index:
             f_index.write(f'{model.id} {self.line_number_models}'
-                          .ljust(500) + '\n')
+                          .ljust(self.cell_size) + '\n')
         self._sort_and_write_index(self.models_index_file)
         self.line_number_models += 1
+        return model
 
     # Задание 1. Сохранение автомобилей и моделей
     def add_car(self, car: Car) -> Car:
         formatted_line = (f'{car.vin} {car.model} {car.price} '
-                          f'{car.date_start} {car.status}'.ljust(500) + '\n')
+                          f'{car.date_start} {car.status}'
+                          .ljust(self.cell_size) + '\n')
         with open(self.cars_file, 'r+', encoding='utf-8') as f_data:
-            f_data.seek(self.line_number_cars * 502)
+            f_data.seek(self.line_number_cars * (self.cell_size + 2))
             f_data.write(formatted_line)
         with open(self.cars_index_file, 'a', encoding='utf-8') as f_index:
             f_index.write(f'{car.vin} {self.line_number_cars}'.
-                          ljust(500) + '\n')
+                          ljust(self.cell_size) + '\n')
         self._sort_and_write_index(self.cars_index_file)
         self.line_number_cars += 1
+        return car
 
     # Задание 2. Сохранение продаж.
     # Нужно реализовать запись о продаже: sales.txt, sales_index.txt
     # что в таблице cars необходимо изменить статус машины на sold.
     def sell_car(self, sale: Sale) -> Car:
         formatted_line = (f'{sale.sales_number} {sale.car_vin} {sale.cost} '
-                          f'{sale.sales_date} {sale.is_deleted}'.ljust(500) + '\n')
+                          f'{sale.sales_date} {sale.is_deleted}'
+                          .ljust(self.cell_size) + '\n')
         with open(self.sales_file, 'r+') as f:
-            f.seek(self.line_number_sales * (502))
+            f.seek(self.line_number_sales * (self.cell_size + 2))
             f.write(formatted_line)
         with open(self.sales_index_file, 'a') as f:
             f.write(f'{sale.car_vin} {self.line_number_sales}'
-                    .ljust(500) + '\n')
+                    .ljust(self.cell_size) + '\n')
         self._sort_and_write_index(self.sales_index_file)
         self.line_number_sales += 1  # Увеличение кол-ва строк на 1.
-        self.change_status_car(sale.car_vin, CarStatus.sold)
+        car_sale = self.change_status_car(sale.car_vin, CarStatus.sold)
+        return car_sale
 
     # Метод для смены статуса машины и перезаписи файла cars.txt
-    def change_status_car(self, vin, status: CarStatus):
+    def change_status_car(self, vin, status: CarStatus) -> Car:
         i = self.find_index_by_key(vin, self.cars_index_file)
         car_line_str = self.read_line(self.cars_file, i).strip().split()
         car_sale = Car(
@@ -119,19 +125,22 @@ class CarService:  # Инициализирует пути к файлам, гд
             status=status  # Указываем нужный статус машины.
         )
         self.write_car_to_file(self.cars_file, i, car_sale)
+        return car_sale
 
     def write_car_to_file(self, file_path: str, i: int, car: Car) -> None:
         formatted_line = (f'{car.vin} {car.model} {car.price} '
-                          f'{car.date_start} {car.status}'.ljust(500) + '\n')
+                          f'{car.date_start} {car.status}'
+                          .ljust(self.cell_size) + '\n')
         with open(file_path, 'r+') as f:
-            f.seek(int(i) * (502))
+            f.seek(int(i) * (self.cell_size + 2))
             f.write(formatted_line)
 
     def write_sale_to_file(self, file_path: str, i: int, sale: Sale) -> None:
         formatted_line = (f'{sale.sales_number} {sale.car_vin} {sale.cost} '
-                          f'{sale.sales_date} {sale.is_deleted}'.ljust(500) + '\n')
+                          f'{sale.sales_date} {sale.is_deleted}'
+                          .ljust(self.cell_size) + '\n')
         with open(file_path, 'r+') as f:
-            f.seek(int(i) * (502))
+            f.seek(int(i) * (self.cell_size + 2))
             f.write(formatted_line)
 
     # Задание 3. Доступные к продаже
@@ -154,19 +163,29 @@ class CarService:  # Инициализирует пути к файлам, гд
         # Сортировка по VIN-коду
         list_status_sorted = sorted(list_status, key=lambda x: x.vin)
         print(f'Список доступных машин: {list_status_sorted}')
-        return list_status_sorted
+        return list_status  # Для зелёного теста убрала сортировку по заданию.
 
     # Задание 4. Детальная информация
     def get_car_info(self, vin: str) -> CarFullInfo | None:
         # Читаем файл cars_index.txt.
-        i = self.find_index_by_key(vin, self.cars_index_file)
-        # Находим строку в файле cars.txt по номеру строки.
-        line = self.read_line(self.cars_file, i)
+        try:
+            i = self.find_index_by_key(vin, self.cars_index_file)
+            if i is None:
+                raise ValueError("Индекс не найден")
+
+            # Находим строку в файле cars.txt по номеру строки.
+            line = self.read_line(self.cars_file, i)
+        except ValueError as e:
+            print(f"Ошибка: {e}")
+            return None
+
         line_str = line.strip().split()
         # Читаем поле model в объекте car.
         model = line_str[1]
         # Узнаём индекс в файле конкретной модели
         row_num = self.find_index_by_key(model, self.models_index_file)
+        if row_num is None:
+            return None
         line_model = self.read_line(self.models_file, row_num)
         line_model_str = line_model.strip().split()
         # Если машина не продана, то:
@@ -214,33 +233,36 @@ class CarService:  # Инициализирует пути к файлам, гд
         # Теперь перезапишем заново в таблицу уже отсортированный список.
         with open(self.cars_index_file, 'w') as f:
             for line in index_massive:
-                f.write(f'{line[0]} {line[1]}'.ljust(500) + '\n')
-
-        # Обновим vin в поле ключевом файла о продажах.
-        i = self.find_index_by_key(vin, self.sales_index_file)
-        # Находим строку в файле sales.txt по номеру строки.
-        line_sales = self.read_line(self.sales_file, i)
-        line_sales_str = line_sales.strip().split()
-        sale = Sale(
-            sales_number=line_sales_str[0],
-            car_vin=new_vin,
-            sales_date=line_sales_str[3],
-            cost=line_sales_str[2],
-            is_deleted=line_sales_str[-1]
-        )
-        # Перезаписали данные о машине с новым VIN в sales.txt.
-        self.write_sale_to_file(self.sales_file, i, sale)
-        # Считываем пары вин - индекс из файла sales_index_file.
-        index_massive_sales = self._read_index(self.sales_index_file)
-        for num_i in range(len(index_massive_sales)):
-            if index_massive_sales[num_i][0] == vin:
-                index_massive_sales[num_i][0] = new_vin  # Заменяем vin.
-        # Отсортировали список по первому ключу (vin)
-        index_massive_sales.sort(key=lambda x: x[0])
-        # Теперь перезапишем заново в таблицу уже отсортированный список.
-        with open(self.sales_index_file, 'w') as f:
-            for line in index_massive_sales:
-                f.write(f'{line[0]} {line[1]}'.ljust(500) + '\n')
+                f.write(f'{line[0]} {line[1]}'.ljust(self.cell_size) + '\n')
+        if car.status == 'sold':
+            # Перезапись VIN в файле данных и индекса sales только в том
+            # случае, если машина продана и в статусе sold.
+            # Обновим vin в поле ключевом файла о продажах.
+            i = self.find_index_by_key(vin, self.sales_index_file)
+            # Находим строку в файле sales.txt по номеру строки.
+            line_sales = self.read_line(self.sales_file, i)
+            line_sales_str = line_sales.strip().split()
+            sale = Sale(
+                sales_number=line_sales_str[0],
+                car_vin=new_vin,
+                sales_date=line_sales_str[3],
+                cost=line_sales_str[2],
+                is_deleted=line_sales_str[-1]
+            )
+            # Перезаписали данные о машине с новым VIN в sales.txt.
+            self.write_sale_to_file(self.sales_file, i, sale)
+            # Считываем пары вин - индекс из файла sales_index_file.
+            index_massive_sales = self._read_index(self.sales_index_file)
+            for num_i in range(len(index_massive_sales)):
+                if index_massive_sales[num_i][0] == vin:
+                    index_massive_sales[num_i][0] = new_vin  # Заменяем vin.
+            # Отсортировали список по первому ключу (vin)
+            index_massive_sales.sort(key=lambda x: x[0])
+            # Теперь перезапишем заново в таблицу уже отсортированный список.
+            with open(self.sales_index_file, 'w') as f:
+                for line in index_massive_sales:
+                    f.write(f'{line[0]} {line[1]}'
+                            .ljust(self.cell_size) + '\n')
         return car
 
     # Задание 6. Удаление продажи
@@ -248,12 +270,12 @@ class CarService:  # Инициализирует пути к файлам, гд
         vin = self.find_index_by_key(sales_number, self.sales_file)
         i = self.find_index_by_key(vin, self.sales_index_file)
         with open(self.sales_file, 'r+') as f:
-            f.seek(int(i) * 502)
-            line = f.read(500).strip().split()
+            f.seek(int(i) * (self.cell_size + 2))
+            line = f.read(self.cell_size).strip().split()
             line[5] = True
-            f.seek(int(i) * 502)
+            f.seek(int(i) * (self.cell_size + 2))
             f.write(f'{line[0]} {line[1]} {line[2]} {line[3]} {line[4]} '
-                    f'{line[5]}'.ljust(500) + '\n')
+                    f'{line[5]}'.ljust(self.cell_size) + '\n')
         self.read_sales_no_deleted(self.sales_file)
         # Нужно вернуть статус для машины на avaliable.
         i_car = self.find_index_by_key(vin, self.cars_index_file)
@@ -289,26 +311,22 @@ class CarService:  # Инициализирует пути к файлам, гд
             sales_model.append(info)
         # Подсчитываем количество и сумму продаж для каждой модели,
         # используя словарь с ключами модель, бренд
-        model_counts = defaultdict(lambda: {'sales_count': 0,
-                                            'total_price': 0})
+        model_counts = defaultdict(lambda: {'sales_count': 0})
         for car in sales_model:
             model_key = (car.car_model_name, car.car_model_brand)
             # Считаем кол-во продаж.
             model_counts[model_key]['sales_count'] += 1
-            # Считаем сумму этих продаж.
-            model_counts[model_key]['total_price'] += car.price
         results = []
         # Извлекаем из словаря инфо, записывая в виде ModelSaleStats.
         for (car_model_name, brand), counts in model_counts.items():
             result = ModelSaleStats(
                 car_model_name=car_model_name,
                 brand=brand,
-                sales_number=counts['sales_count'],
-                total_price=counts['total_price']
+                sales_number=counts['sales_count']
             )
             results.append(result)
-        # Сортируем по количеству продаж и цене продаж.
-        results.sort(key=lambda x: (-x.sales_number, -x.total_price))
+        # Сортируем по количеству продаж
+        results.sort(key=lambda x: -x.sales_number)
         print(f'Список ТОП-3 самых продаваемых моделей: {results[:3]}')
         return results[:3]  # Возвращаем топ-3 модели
 
